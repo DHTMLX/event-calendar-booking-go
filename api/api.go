@@ -37,6 +37,24 @@ func (api *API) InitRoutes(r chi.Router) {
 		api.response(w, doctors, err)
 	})
 
+	r.Get("/calendars", func(w http.ResponseWriter, r *http.Request) {
+		doctors, err := api.sAll.Doctors.GetDoctorsList()
+		api.response(w, doctors, err)
+	})
+
+	r.Put("/calendars/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id := numberParam(r, "id")
+		upd := service.DoctorUpdate{}
+		err := parseForm(w, r, &upd)
+		if err != nil {
+			api.errResponse(w, err.Error())
+			return
+		}
+		err = api.sAll.Doctors.Update(id, upd)
+
+		api.response(w, &response{Action: "updated"}, err)
+	})
+
 	r.Get("/events", func(w http.ResponseWriter, r *http.Request) {
 		data, err := api.sAll.Worktime.GetAll()
 		api.response(w, data, err)

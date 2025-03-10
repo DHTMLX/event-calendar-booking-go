@@ -34,3 +34,8 @@ func (d *doctorsDAO) GetAll(preload bool) ([]Doctor, error) {
 
 	return doctors, err
 }
+
+func (d *doctorsDAO) Update(doctor Doctor) error {
+	err := d.db.Save(&doctor).Error
+	return err
+}
