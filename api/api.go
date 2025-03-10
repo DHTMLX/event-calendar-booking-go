@@ -86,12 +86,12 @@ func (api *API) InitRoutes(r chi.Router) {
 		api.response(w, &response{}, err)
 	})
 
-	r.Get("/doctors/reservations", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/reservations", func(w http.ResponseWriter, r *http.Request) {
 		reservations, err := api.sAll.Reservations.GetAll()
 		api.response(w, reservations, err)
 	})
 
-	r.Post("/doctors/reservations", func(w http.ResponseWriter, r *http.Request) {
+	r.Post("/reservations", func(w http.ResponseWriter, r *http.Request) {
 		reservation := service.Reservation{}
 		err := parseForm(w, r, &reservation)
 		if err != nil {
