@@ -47,8 +47,8 @@ type EventStr struct {
 }
 
 const (
-	strFormat = "2006-01-02 15:04:05"
-	endDate   = "9999-02-01 00:00:00"
+	strFormat = time.RFC3339
+	endDate   = "9999-12-31T00:00:00.000Z"
 	endUnix   = int64(253402300799000)
 )
 
