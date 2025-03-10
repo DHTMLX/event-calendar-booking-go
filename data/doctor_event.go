@@ -26,7 +26,7 @@ func (d *doctorsEventDAO) GetAll() ([]DoctorEvent, error) {
 	return sch, err
 }
 
-func (d *doctorsEventDAO) Add(doctorID int, text string, from, to int, date, start, end int64, recurring bool, rrule string, recID int, original string, status string) (int, error) {
+func (d *doctorsEventDAO) Add(doctorID, from, to int, date, start, end int64, recurring bool, rrule string, recID int, original, status string) (int, error) {
 	if date == 0 {
 		return 0, errors.New("date argument not defined")
 	}
@@ -50,7 +50,7 @@ func (d *doctorsEventDAO) Add(doctorID int, text string, from, to int, date, sta
 	return event.ID, err
 }
 
-func (d *doctorsEventDAO) Update(id, doctorID int, text string, from, to int, date, start, end int64, recurring bool, rrule string, recID int, original string, status string) (err error) {
+func (d *doctorsEventDAO) Update(id, doctorID, from, to int, date, start, end int64, recurring bool, rrule string, recID int, original, status string) (err error) {
 	tx := d.db.Begin()
 	defer func() {
 		if err == nil {
@@ -60,12 +60,8 @@ func (d *doctorsEventDAO) Update(id, doctorID int, text string, from, to int, da
 		}
 	}()
 
-	event, err := d.GetOne(id)
-	if err != nil {
-		return err
-	}
-
 	newEvent := DoctorEvent{
+		ID:               id,
 		DoctorID:         doctorID,
 		From:             from,
 		To:               to,
@@ -79,20 +75,7 @@ func (d *doctorsEventDAO) Update(id, doctorID int, text string, from, to int, da
 		Status:           status,
 	}
 
-	if event.DoctorID == newEvent.DoctorID {
-		// add ID to update existing
-		newEvent.ID = event.ID
-		err = tx.Save(&newEvent).Error
-	} else {
-		// delete event at all for this old doctor and create event for doctorID
-		err = tx.Delete(&DoctorEvent{}, id).Error
-		if err != nil {
-			return err
-		}
-
-		err = tx.Create(&newEvent).Error
-	}
-
+	err = tx.Save(&newEvent).Error
 	return err
 }
 

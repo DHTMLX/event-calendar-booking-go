@@ -4,6 +4,7 @@ import (
 	"event-calendar-booking/common"
 	"event-calendar-booking/data"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -12,8 +13,7 @@ type eventsService struct {
 }
 
 type Event struct {
-	DoctorID int    `json:"type"`
-	Text     string `json:"text"`
+	DoctorID int `json:"type"`
 
 	StartDate *common.JDate `json:"start_date"`
 	EndDate   *common.JDate `json:"end_date"`
@@ -29,16 +29,15 @@ type Event struct {
 }
 
 type EventStr struct {
-	ID       int    `json:"id"`
-	DoctorID int    `json:"type"`
-	Text     string `json:"text"`
+	ID       int `json:"id"`
+	DoctorID int `json:"type"`
 
 	StartDate string `json:"start_date,omitempty"`
 	EndDate   string `json:"end_date,omitempty"`
 
 	Recurring bool   `json:"recurring,omitempty"`
 	Rrule     string `json:"RRULE,omitempty"`
-	STDate    string `json:"STDEND,omitempty"`
+	STDate    string `json:"STDATE,omitempty"`
 	DTEnd     string `json:"DTEND,omitempty"`
 
 	RecurringEventID int    `json:"recurringEventId,omitempty"`
@@ -51,6 +50,8 @@ const (
 	endDate   = "9999-12-31T00:00:00.000Z"
 	endUnix   = int64(253402300799000)
 )
+
+var days = []string{"SU", "MO", "TU", "WE", "TH", "FR", "SA"}
 
 // returns records for the event-calendar Doctors View
 func (s *eventsService) GetAll() ([]EventStr, error) {
@@ -106,11 +107,14 @@ func (s *eventsService) Add(data Event) (int, error) {
 	if data.Recurring {
 		start = data.STDate.UnixMilli()
 		end = endUnix // data.DTEnd.UnixMilli()
+
+		if !strings.Contains(data.Rrule, "BYDAY") {
+			data.Rrule = fmt.Sprintf("INTERVAL=1;FREQ=WEEKLY;BYDAY=%s", days[data.StartDate.Weekday()])
+		}
 	}
 
 	id, err := s.dao.DoctorsEvent.Add(
 		data.DoctorID,
-		data.Text,
 		from,
 		to,
 		date,
@@ -149,12 +153,15 @@ func (s *eventsService) Update(eventID int, data Event) error {
 	if data.Recurring {
 		start = data.STDate.UnixMilli()
 		end = endUnix // data.DTEnd.UnixMilli()
+
+		if !strings.Contains(data.Rrule, "BYDAY") {
+			data.Rrule = fmt.Sprintf("INTERVAL=1;FREQ=WEEKLY;BYDAY=%s", days[data.StartDate.Weekday()])
+		}
 	}
 
 	err = s.dao.DoctorsEvent.Update(
 		eventID,
 		data.DoctorID,
-		data.Text,
 		from,
 		to,
 		date,
