@@ -4,7 +4,7 @@ import "event-calendar-booking/data"
 
 type ServiceAll struct {
 	Doctors      *doctorsService
-	Worktime     *worktimeService
+	Events       *eventsService
 	Reservations *reservationsService
 	Units        *unitsService
 }
@@ -13,7 +13,7 @@ func NewService(dao *data.DAO) *ServiceAll {
 	return &ServiceAll{
 		Doctors:      &doctorsService{dao},
 		Reservations: &reservationsService{dao},
-		Worktime:     &worktimeService{dao},
+		Events:       &eventsService{dao},
 		Units:        &unitsService{dao},
 	}
 }

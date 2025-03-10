@@ -11,7 +11,7 @@ type JDate struct {
 	time.Time
 }
 
-const layout = "2006-01-02 15:04"
+const layout = time.RFC3339
 
 var nilTime = (time.Time{}).UnixNano()
 

@@ -1,70 +1,88 @@
 package service
 
 import (
+	"event-calendar-booking/common"
+	"event-calendar-booking/data"
 	"fmt"
-	"scheduler-booking/common"
-	"scheduler-booking/data"
 	"time"
 )
 
-type worktimeService struct {
+type eventsService struct {
 	dao *data.DAO
 }
 
-type Worktime struct {
-	DoctorID         int           `json:"doctor_id"`
-	StartDate        *common.JDate `json:"start_date"`
-	EndDate          *common.JDate `json:"end_date"`
-	Rrule            string        `json:"rrule"`
-	Duration         int           `json:"duration"` // in seconds
-	RecurringEventID string        `json:"recurring_event_id"`
-	OriginalStart    string        `json:"original_start"`
-	Deleted          bool          `json:"deleted"`
+type Event struct {
+	DoctorID int    `json:"type"`
+	Text     string `json:"text"`
+
+	StartDate *common.JDate `json:"start_date"`
+	EndDate   *common.JDate `json:"end_date"`
+
+	Recurring bool          `json:"recurring"`
+	Rrule     string        `json:"RRULE"`
+	STDate    *common.JDate `json:"STDATE"`
+	DTEnd     *common.JDate `json:"DTEND"`
+
+	RecurringEventID int    `json:"recurringEventId"`
+	OriginalStart    string `json:"originalStartTime"`
+	Status           string `json:"status"`
 }
 
-type DoctorRoutineStr struct {
-	ID               int    `json:"id"`
-	DoctorID         int    `json:"doctor_id"`
-	StartDate        string `json:"start_date,omitempty"`
-	EndDate          string `json:"end_date,omitempty"`
-	Rrule            string `json:"rrule,omitempty"`
-	Duration         int    `json:"duration,omitempty"`
-	RecurringEventID string `json:"recurring_event_id,omitempty"`
-	OriginalStart    string `json:"original_start,omitempty"`
-	Deleted          bool   `json:"deleted,omitempty"`
+type EventStr struct {
+	ID       int    `json:"id"`
+	DoctorID int    `json:"type"`
+	Text     string `json:"text"`
+
+	StartDate string `json:"start_date,omitempty"`
+	EndDate   string `json:"end_date,omitempty"`
+
+	Recurring bool   `json:"recurring,omitempty"`
+	Rrule     string `json:"RRULE,omitempty"`
+	STDate    string `json:"STDEND,omitempty"`
+	DTEnd     string `json:"DTEND,omitempty"`
+
+	RecurringEventID int    `json:"recurringEventId,omitempty"`
+	OriginalStart    string `json:"originalStartTime,omitempty"`
+	Status           string `json:"status,omitempty"`
 }
 
-const strFormat = "2006-01-02 15:04:05"
-const endDate = "9999-02-01 00:00:00"
+const (
+	strFormat = "2006-01-02 15:04:05"
+	endDate   = "9999-02-01 00:00:00"
+	endUnix   = int64(253402300799000)
+)
 
-// returns records for the Scheduler Doctors View
-func (s *worktimeService) GetAll() ([]DoctorRoutineStr, error) {
-	schedule, err := s.dao.DoctorsSchedule.GetAll()
-	out := make([]DoctorRoutineStr, 0)
+// returns records for the event-calendar Doctors View
+func (s *eventsService) GetAll() ([]EventStr, error) {
+	events, err := s.dao.DoctorsEvent.GetAll()
+	out := make([]EventStr, 0)
 
-	for _, sch := range schedule {
-		fh := sch.From / 60
-		fm := sch.From % 60
-		th := sch.To / 60
-		tm := sch.To % 60
+	for _, event := range events {
+		fh := event.From / 60
+		fm := event.From % 60
+		th := event.To / 60
+		tm := event.To % 60
 
-		y, m, d := time.UnixMilli(sch.Date).UTC().Date()
+		y, m, d := time.UnixMilli(event.Date).UTC().Date()
 
-		end := endDate
-		if sch.Rrule == "" {
-			end = time.Date(y, m, d, th, tm, 0, 0, time.UTC).Format(strFormat)
+		var stdate, dtend string
+		if event.Recurring {
+			stdate = time.UnixMilli(event.Start).UTC().Format(strFormat)
+			dtend = endDate
 		}
 
-		r := DoctorRoutineStr{
-			ID:               sch.ID,
-			DoctorID:         sch.DoctorID,
+		r := EventStr{
+			ID:               event.ID,
+			DoctorID:         event.DoctorID,
 			StartDate:        time.Date(y, m, d, fh, fm, 0, 0, time.UTC).Format(strFormat),
-			EndDate:          end,
-			Rrule:            sch.Rrule,
-			Duration:         sch.Duration,
-			RecurringEventID: sch.RecurringEventID,
-			OriginalStart:    sch.OriginalStart,
-			Deleted:          sch.Deleted,
+			EndDate:          time.Date(y, m, d, th, tm, 0, 0, time.UTC).Format(strFormat),
+			Recurring:        event.Recurring,
+			Rrule:            event.Rrule,
+			STDate:           stdate,
+			DTEnd:            dtend,
+			RecurringEventID: event.RecurringEventID,
+			OriginalStart:    event.OriginalStart,
+			Status:           event.Status,
 		}
 
 		out = append(out, r)
@@ -73,8 +91,8 @@ func (s *worktimeService) GetAll() ([]DoctorRoutineStr, error) {
 	return out, err
 }
 
-// adds doctor's schedule
-func (s *worktimeService) Add(data Worktime) (int, error) {
+// adds doctor's event
+func (s *eventsService) Add(data Event) (int, error) {
 	if err := data.validate(); err != nil {
 		return 0, err
 	}
@@ -84,29 +102,38 @@ func (s *worktimeService) Add(data Worktime) (int, error) {
 	from := data.StartDate.Hour()*60 + data.StartDate.Minute()
 	to := from + data.duration()
 
-	id, err := s.dao.DoctorsSchedule.Add(
+	var start, end int64
+	if data.Recurring {
+		start = data.STDate.UnixMilli()
+		end = endUnix // data.DTEnd.UnixMilli()
+	}
+
+	id, err := s.dao.DoctorsEvent.Add(
 		data.DoctorID,
+		data.Text,
 		from,
 		to,
 		date,
+		start,
+		end,
+		data.Recurring,
 		data.Rrule,
-		data.Duration,
-		data.OriginalStart,
 		data.RecurringEventID,
-		data.Deleted,
+		data.OriginalStart,
+		data.Status,
 	)
 	return id, err
 }
 
-// updates doctor's schedule
-func (s *worktimeService) Update(scheduleID int, data Worktime) error {
-	schedule, err := s.dao.DoctorsSchedule.GetOne(scheduleID)
+// updates doctor's event
+func (s *eventsService) Update(eventID int, data Event) error {
+	event, err := s.dao.DoctorsEvent.GetOne(eventID)
 	if err != nil {
 		return err
 	}
 
-	if schedule.ID == 0 {
-		return fmt.Errorf("schedule with id %d not found", scheduleID)
+	if event.ID == 0 {
+		return fmt.Errorf("event with id %d not found", eventID)
 	}
 
 	if err := data.validate(); err != nil {
@@ -118,42 +145,47 @@ func (s *worktimeService) Update(scheduleID int, data Worktime) error {
 	from := data.StartDate.Hour()*60 + data.StartDate.Minute()
 	to := from + data.duration()
 
-	err = s.dao.DoctorsSchedule.Update(
-		scheduleID,
+	var start, end int64
+	if data.Recurring {
+		start = data.STDate.UnixMilli()
+		end = endUnix // data.DTEnd.UnixMilli()
+	}
+
+	err = s.dao.DoctorsEvent.Update(
+		eventID,
 		data.DoctorID,
+		data.Text,
 		from,
 		to,
 		date,
+		start,
+		end,
+		data.Recurring,
 		data.Rrule,
-		data.Duration,
-		data.OriginalStart,
 		data.RecurringEventID,
-		data.Deleted,
+		data.OriginalStart,
+		data.Status,
 	)
 	return err
 }
 
-// delets doctor's schedule for the specific day
-func (s *worktimeService) Delete(id int) error {
-	return s.dao.DoctorsSchedule.Delete(id)
+// delets doctor's event
+func (s *eventsService) Delete(id int) error {
+	return s.dao.DoctorsEvent.Delete(id)
 }
 
-func (w Worktime) validate() error {
-	if w.StartDate.UnixMilli() < data.Now().UnixMilli() {
+func (e Event) validate() error {
+	if e.StartDate.UnixMilli() < data.Now().UnixMilli() {
 		return fmt.Errorf("cannot set work time in the past")
 	}
-	if w.StartDate.UnixMilli() >= w.EndDate.UnixMilli() {
+	if e.StartDate.UnixMilli() >= e.EndDate.UnixMilli() {
 		return fmt.Errorf("invalid time interval")
 	}
 	return nil
 }
 
 // in minutes
-func (w Worktime) duration() int {
-	if w.Duration != 0 {
-		return w.Duration / 60
-	}
-
-	diff := w.EndDate.Sub(w.StartDate.Time)
+func (e Event) duration() int {
+	diff := e.EndDate.Sub(e.StartDate.Time)
 	return int(diff.Minutes())
 }

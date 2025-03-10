@@ -11,9 +11,11 @@ type Doctor struct {
 	SlotSize int    `json:"slot_size"`
 	ImageURL string `json:"-"`
 
-	DoctorSchedule []DoctorSchedule `json:"-"`
-	OccupiedSlots  []OccupiedSlot   `json:"-"`
-	Review         Review           `json:"-" gorm:"foreignkey:DoctorID"`
+	DoctorEvent   []DoctorEvent  `json:"-"`
+	OccupiedSlots []OccupiedSlot `json:"-"`
+	Review        Review         `json:"-" gorm:"foreignkey:DoctorID"`
+
+	Active bool `json:"active"`
 }
 
 type Review struct {
@@ -23,17 +25,19 @@ type Review struct {
 	DoctorID int `json:"-"`
 }
 
-type DoctorSchedule struct {
+type DoctorEvent struct {
 	ID               int
 	DoctorID         int
 	From             int
 	To               int
 	Date             int64
+	Start            int64
+	End              int64
+	Recurring        bool
 	Rrule            string
-	RecurringEventID string
+	RecurringEventID int
 	OriginalStart    string
-	Duration         int // in seconds
-	Deleted          bool
+	Status           string
 }
 
 type OccupiedSlot struct {

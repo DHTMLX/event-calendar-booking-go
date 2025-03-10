@@ -14,9 +14,9 @@ type DBConfig struct {
 type DAO struct {
 	db *gorm.DB
 
-	Doctors         *doctorsDAO
-	DoctorsSchedule *doctorsScheduleDAO
-	OccupiedSlots   *occupiedSlotsDAO
+	Doctors       *doctorsDAO
+	DoctorsEvent  *doctorsEventDAO
+	OccupiedSlots *occupiedSlotsDAO
 }
 
 func NewDAO(config DBConfig) *DAO {
@@ -29,12 +29,12 @@ func NewDAO(config DBConfig) *DAO {
 
 	db.AutoMigrate(&Doctor{})
 	db.AutoMigrate(&Review{})
-	db.AutoMigrate(&DoctorSchedule{})
+	db.AutoMigrate(&DoctorEvent{})
 	db.AutoMigrate(&OccupiedSlot{})
 
 	dao := DAO{db: db}
 	dao.Doctors = newDoctorsDAO(db)
-	dao.DoctorsSchedule = newDoctorsScheduleDAO(db)
+	dao.DoctorsEvent = newDoctorsEventDAO(db)
 	dao.OccupiedSlots = newOccupiedSlotsDAO(db)
 
 	if config.ResetOnStart {
