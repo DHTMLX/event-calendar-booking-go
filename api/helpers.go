@@ -9,8 +9,7 @@ import (
 )
 
 type response struct {
-	Action string `json:"action,omitempty"`
-	ID     int    `json:"tid,omitempty"`
+	ID int `json:"id,omitempty"`
 }
 
 func numberParam(r *http.Request, key string) int {
