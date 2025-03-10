@@ -11,7 +11,7 @@ type Doctor struct {
 	SlotSize int    `json:"slot_size"`
 	ImageURL string `json:"-"`
 
-	DoctorEvent   []DoctorEvent  `json:"-"`
+	DoctorEvents  []DoctorEvent  `json:"-"`
 	OccupiedSlots []OccupiedSlot `json:"-"`
 	Review        Review         `json:"-" gorm:"foreignkey:DoctorID"`
 
