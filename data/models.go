@@ -42,7 +42,7 @@ type DoctorEvent struct {
 
 type OccupiedSlot struct {
 	ID            int    `json:"id"`
-	DoctorID      int    `json:"doctor_id"`
+	DoctorID      int    `json:"type"`
 	Date          int64  `json:"date"`
 	ClientName    string `json:"client_name"`
 	ClientEmail   string `json:"client_email"`

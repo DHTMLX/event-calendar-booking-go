@@ -28,7 +28,7 @@ func (d *occupiedSlotsDAO) GetUsedSlot(doctorId int, date int64) (OccupiedSlot, 
 	slots := OccupiedSlot{}
 	err := d.db.
 		Limit(1).
-		Find(&slots, " doctor_id = ? AND date = ?", doctorId, date).Error
+		Find(&slots, "doctor_id = ? AND date = ?", doctorId, date).Error
 	return slots, err
 }
 
